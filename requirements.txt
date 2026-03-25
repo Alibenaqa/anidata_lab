@@ -1,0 +1,5 @@
+pandas==2.2.0
+numpy==1.26.0
+ydata-profiling==4.6.0
+elasticsearch==8.12.0
+apache-airflow==2.8.0
