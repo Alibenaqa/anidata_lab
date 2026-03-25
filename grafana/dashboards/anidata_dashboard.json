@@ -1,0 +1,195 @@
+{
+  "title": "AniData Lab — Sakura Analytics",
+  "uid": "anidata-main",
+  "tags": ["anidata", "anime", "manga"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total Animes indexés",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+      "options": {
+        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": "Elasticsearch",
+          "query": "*",
+          "metrics": [{"type": "count", "id": "1"}],
+          "bucketAggs": []
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Score moyen global",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+      "options": {
+        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "datasource": "Elasticsearch",
+          "query": "*",
+          "metrics": [{"type": "avg", "field": "Score", "id": "1"}],
+          "bucketAggs": []
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Top 10 Genres",
+      "type": "barchart",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "options": {
+        "orientation": "horizontal",
+        "xTickLabelRotation": 0
+      },
+      "targets": [
+        {
+          "datasource": "Elasticsearch",
+          "query": "*",
+          "metrics": [{"type": "count", "id": "1"}],
+          "bucketAggs": [
+            {
+              "type": "terms",
+              "field": "genres_list",
+              "settings": {"size": "10", "order": "desc", "orderBy": "1"}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Top 10 Studios (par nombre d'animes)",
+      "type": "barchart",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "options": {
+        "orientation": "horizontal"
+      },
+      "targets": [
+        {
+          "datasource": "Elasticsearch",
+          "query": "*",
+          "metrics": [{"type": "count", "id": "1"}],
+          "bucketAggs": [
+            {
+              "type": "terms",
+              "field": "studios_list",
+              "settings": {"size": "10", "order": "desc", "orderBy": "1"}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Répartition par Type (TV, Movie, OVA...)",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 12},
+      "options": {
+        "pieType": "donut",
+        "displayLabels": ["name", "percent"]
+      },
+      "targets": [
+        {
+          "datasource": "Elasticsearch",
+          "query": "*",
+          "metrics": [{"type": "count", "id": "1"}],
+          "bucketAggs": [
+            {
+              "type": "terms",
+              "field": "Type",
+              "settings": {"size": "10", "order": "desc", "orderBy": "1"}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Distribution des scores",
+      "type": "histogram",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 12},
+      "options": {
+        "bucketSize": "auto",
+        "fillOpacity": 80
+      },
+      "targets": [
+        {
+          "datasource": "Elasticsearch",
+          "query": "Score:>0",
+          "metrics": [{"type": "avg", "field": "Score", "id": "1"}],
+          "bucketAggs": [
+            {
+              "type": "histogram",
+              "field": "Score",
+              "settings": {"interval": "0.5", "min_doc_count": "1"}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Studio Category (Grand Studio vs Indépendant)",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 12},
+      "options": {
+        "pieType": "pie",
+        "displayLabels": ["name", "percent"]
+      },
+      "targets": [
+        {
+          "datasource": "Elasticsearch",
+          "query": "*",
+          "metrics": [{"type": "count", "id": "1"}],
+          "bucketAggs": [
+            {
+              "type": "terms",
+              "field": "studio_category",
+              "settings": {"size": "5", "order": "desc", "orderBy": "1"}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Top 20 Animes par Weighted Score",
+      "type": "table",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 20},
+      "options": {
+        "sortBy": [{"displayName": "Weighted Score", "desc": true}]
+      },
+      "targets": [
+        {
+          "datasource": "Elasticsearch",
+          "query": "Scored By:>10000",
+          "metrics": [
+            {"type": "max", "field": "weighted_score", "id": "1"},
+            {"type": "max", "field": "Score", "id": "2"},
+            {"type": "max", "field": "Members", "id": "3"}
+          ],
+          "bucketAggs": [
+            {
+              "type": "terms",
+              "field": "Name.keyword",
+              "settings": {"size": "20", "order": "desc", "orderBy": "1"}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
