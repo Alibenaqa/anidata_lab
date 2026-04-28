@@ -1,18 +1,19 @@
 version: '3.8'
 
 x-airflow-common: &airflow-common
-  image: apache/airflow:2.8.0
+  build:
+    context: ../..
+    dockerfile: docker/airflow/Dockerfile
   environment:
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CORE__FERNET_KEY: 'ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg='
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
     AIRFLOW__WEBSERVER__SECRET_KEY: 'anidata_secret_2026'
     ELASTICSEARCH_HOST: 'http://host.docker.internal:9200'
     ANIDATA_RAW_PATH: '/opt/airflow/data/raw'
   volumes:
-    - ../../dags:/opt/airflow/dags
-    - ../../src:/opt/airflow/src
     - ../../data:/opt/airflow/data
     - airflow_logs:/opt/airflow/logs
   depends_on:
@@ -34,14 +35,15 @@ services:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 10s
       retries: 5
+    restart: unless-stopped
 
   airflow-init:
     <<: *airflow-common
     command: >
-      bash -c "pip install pandas numpy elasticsearch &&
-      airflow db migrate &&
-      airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@anidata.lab --password admin123"
-    restart: on-failure
+      bash -c "airflow db migrate &&
+      airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@anidata.lab --password admin123 || true &&
+      echo 'Init terminée.'"
+    restart: "no"
 
   airflow-webserver:
     <<: *airflow-common
@@ -53,11 +55,30 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   airflow-scheduler:
     <<: *airflow-common
     command: scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  mock-site:
+    image: nginx:alpine
+    container_name: anidata-mock-site
+    ports:
+      - "8088:80"
+    volumes:
+      - ../../mock-site:/usr/share/nginx/html:ro
     restart: unless-stopped
 
 volumes:
