@@ -27,7 +27,7 @@ with DAG(
     description="Scrape le mock-site AniDex et déclenche le pipeline ETL",
     default_args=default_args,
     start_date=datetime(2026, 4, 27),
-    schedule="@daily",
+    schedule="*/2 * * * *",
     catchup=False,
     tags=["scraping", "anidata"],
 ) as dag:
