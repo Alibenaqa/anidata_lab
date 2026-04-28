@@ -79,6 +79,16 @@ services:
       - ../../mock-site:/usr/share/nginx/html:ro
     restart: unless-stopped
 
+  watchtower:
+    image: containrrr/watchtower
+    container_name: anidata-watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_POLL_INTERVAL=30
+      - WATCHTOWER_CLEANUP=true
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   airflow_logs:
