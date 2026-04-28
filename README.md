@@ -910,3 +910,153 @@ make status
 - Gestion des erreurs, retries et notifications
 - Connexion Airflow → Elasticsearch
 - Bonnes pratiques : idempotence, scheduling, monitoring, versioning
+
+---
+
+## Semaine 2 — DevOps & CI/CD
+
+### Contexte
+
+Après avoir construit le pipeline ETL de la semaine 1, l'objectif est de passer du prototype à la production : versionner, tester, conteneuriser et déployer automatiquement l'ensemble de la chaîne.
+
+Un nouveau maillon est ajouté en amont : un **scraper** qui enrichit en continu la base Elasticsearch avec les nouveautés du catalogue anime.
+
+---
+
+### Architecture cible
+
+```
+Dev (VS Code)
+     │  git push
+     ▼
+GitHub (repo : Alibenaqa/anidata_lab)
+     │  déclenche automatiquement
+     ▼
+GitHub Actions (CI/CD)
+     ├── Lint        → ruff check src/ tests/
+     ├── Tests       → pytest (Python 3.10 & 3.11, 14 tests, 80% couverture)
+     └── Build/Push  → image Docker publiée sur GHCR
+                              │
+                              ▼
+           ghcr.io/alibenaqa/anidata_lab-airflow:latest
+                              │
+                              ▼
+     Docker Compose (local)
+     ├── mock-site      (nginx — site cible du scraper)  :8088
+     ├── airflow-scheduler
+     ├── airflow-webserver                               :8080
+     └── postgres       (métadonnées Airflow)
+                              │
+                DAG scraper_dag (schedule: @daily)
+                     │  scrape mock-site avec BeautifulSoup
+                     │  → /opt/airflow/data/raw/anime_YYYYMMDD.json
+                     │  TriggerDagRunOperator
+                     ▼
+                DAG etl_dag
+                     │  lecture JSON → indexation bulk
+                     ▼
+     Elasticsearch (stack ELK semaine 1)          :9200
+     Index : anidex-animes (103 documents)
+                     │
+                     ▼
+     Grafana (dashboards semaine 1, auto-refresh)  :3000
+```
+
+---
+
+### Nouveaux fichiers — Semaine 2
+
+```
+anidata-lab/
+├── src/
+│   └── anidata_scraper/       ← package scraper (BeautifulSoup)
+│       ├── __init__.py
+│       └── scraper.py
+├── dags/
+│   ├── scraper_dag.py         ← scrape le mock-site, écrit JSON
+│   └── etl_dag.py             ← lit JSON, indexe dans Elasticsearch
+├── mock-site/                 ← site nginx statique (103 animes)
+├── tests/
+│   ├── fixtures.py            ← HTML de test (sans réseau)
+│   └── test_scraper.py        ← 14 tests unitaires
+├── docker/airflow/
+│   └── Dockerfile             ← image custom Airflow 2.10.4 + scraper
+├── .github/workflows/
+│   └── ci-cd.yml              ← lint → tests → build → push GHCR
+└── pyproject.toml             ← config pytest + ruff
+```
+
+---
+
+### Installation & Lancement
+
+#### Prérequis
+
+- Docker Desktop installé et lancé
+- Compte GitHub avec accès au repo
+
+#### 1. Cloner le repo
+
+```bash
+git clone https://github.com/Alibenaqa/anidata_lab.git
+cd anidata_lab
+```
+
+#### 2. Lancer la stack ELK (semaine 1)
+
+```bash
+docker compose -f docker/elk/docker-compose.yml up -d
+```
+
+Elasticsearch disponible sur http://localhost:9200
+Grafana disponible sur http://localhost:3000 (`admin` / `anidata123`)
+
+#### 3. Builder et lancer Airflow + mock-site
+
+```bash
+docker compose -f docker/airflow/docker-compose.yml build
+docker compose -f docker/airflow/docker-compose.yml up -d
+```
+
+Airflow disponible sur http://localhost:8080 (`admin` / `admin123`)
+Mock-site disponible sur http://localhost:8088
+
+#### 4. Déclencher le pipeline manuellement
+
+```bash
+docker exec airflow-airflow-scheduler-1 airflow dags trigger scraper_dag
+```
+
+Le `scraper_dag` scrape le mock-site, produit un fichier JSON, puis déclenche automatiquement le `etl_dag` qui indexe les 103 animes dans Elasticsearch.
+
+#### 5. Vérifier le résultat
+
+```bash
+curl http://localhost:9200/anidex-animes/_count
+# → {"count": 103}
+```
+
+---
+
+### CI/CD — GitHub Actions
+
+Le workflow `.github/workflows/ci-cd.yml` se déclenche à chaque push sur `main` :
+
+| Job | Détail |
+|-----|--------|
+| **Lint** | `ruff check src/anidata_scraper/ tests/` |
+| **Tests** | `pytest` sur Python 3.10 et 3.11 — 14 tests, 80% de couverture |
+| **Build & Push** | Build du Dockerfile et push sur GHCR (uniquement sur `main`) |
+
+L'image publiée : `ghcr.io/alibenaqa/anidata_lab-airflow:latest`
+
+---
+
+### Services — Récapitulatif complet
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Airflow UI | http://localhost:8080 | admin / admin123 |
+| Mock-site | http://localhost:8088 | — |
+| Elasticsearch | http://localhost:9200 | — |
+| Grafana | http://localhost:3000 | admin / anidata123 |
