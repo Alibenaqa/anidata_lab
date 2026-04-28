@@ -9,7 +9,7 @@ default_args = {
     "owner": "sakura-analytics",
     "retries": 2,
     "retry_delay": timedelta(minutes=2),
-}#demo CI cdjtyu
+}#demo CI hhihh
 
 def run_scraper(**context):
     from anidata_scraper import scrape_to_file
