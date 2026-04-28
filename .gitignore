@@ -20,3 +20,9 @@ venv/
 logs/
 airflow.db
 airflow.cfg
+
+# Fichiers locaux
+*.dmg
+*.pdf
+.coverage
+*.ipynb
