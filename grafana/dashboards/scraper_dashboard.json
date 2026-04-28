@@ -1,0 +1,207 @@
+{
+  "title": "AniDex — Données Scrapées",
+  "uid": "anidex-scraper",
+  "version": 1,
+  "schemaVersion": 38,
+  "refresh": "30s",
+  "time": { "from": "now-7d", "to": "now" },
+  "tags": ["scraper", "anidata", "semaine2"],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total animes scrapés",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": "AniDex-Scraper",
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": { "calcs": ["count"] }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": "AniDex-Scraper",
+          "query": "*",
+          "metrics": [{ "id": "1", "type": "count" }],
+          "bucketAggs": [],
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Score moyen",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": "AniDex-Scraper",
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": { "calcs": ["mean"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 2,
+          "thresholds": {
+            "steps": [
+              { "color": "orange", "value": null },
+              { "color": "green", "value": 7 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": "AniDex-Scraper",
+          "query": "*",
+          "metrics": [{ "id": "1", "type": "avg", "field": "score" }],
+          "bucketAggs": [],
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Dernière mise à jour",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": "AniDex-Scraper",
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "dateTimeFromNow" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": "AniDex-Scraper",
+          "query": "*",
+          "metrics": [{ "id": "1", "type": "max", "field": "@timestamp" }],
+          "bucketAggs": [],
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Top Studios",
+      "type": "barchart",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "datasource": "AniDex-Scraper",
+      "options": {
+        "orientation": "horizontal",
+        "xTickLabelRotation": 0,
+        "legend": { "displayMode": "none" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": "AniDex-Scraper",
+          "query": "*",
+          "metrics": [{ "id": "1", "type": "count" }],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "terms",
+              "field": "studio.keyword",
+              "settings": { "size": "10", "order": "desc", "orderBy": "1" }
+            }
+          ],
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Répartition par Type",
+      "type": "piechart",
+      "gridPos": { "x": 12, "y": 4, "w": 6, "h": 8 },
+      "datasource": "AniDex-Scraper",
+      "options": {
+        "pieType": "donut",
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": "AniDex-Scraper",
+          "query": "*",
+          "metrics": [{ "id": "1", "type": "count" }],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "terms",
+              "field": "type.keyword",
+              "settings": { "size": "10", "order": "desc", "orderBy": "1" }
+            }
+          ],
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Distribution des scores",
+      "type": "histogram",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "datasource": "AniDex-Scraper",
+      "options": {
+        "bucketSize": "auto",
+        "fillOpacity": 80,
+        "legend": { "displayMode": "none" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": "AniDex-Scraper",
+          "query": "score:*",
+          "metrics": [{ "id": "1", "type": "avg", "field": "score" }],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "histogram",
+              "field": "score",
+              "settings": { "interval": "0.5", "min_doc_count": "1" }
+            }
+          ],
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Top 20 animes (score)",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 20, "w": 24, "h": 10 },
+      "datasource": "AniDex-Scraper",
+      "options": { "sortBy": [{ "displayName": "Score", "desc": true }] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": "AniDex-Scraper",
+          "query": "score:*",
+          "metrics": [
+            { "id": "1", "type": "max", "field": "score" }
+          ],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "terms",
+              "field": "title_en.keyword",
+              "settings": { "size": "20", "order": "desc", "orderBy": "1" }
+            }
+          ],
+          "timeField": "@timestamp"
+        }
+      ]
+    }
+  ]
+}
