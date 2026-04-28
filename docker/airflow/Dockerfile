@@ -6,9 +6,8 @@ LABEL org.opencontainers.image.source="https://github.com/Alibenaqa/anidata_lab"
 
 USER airflow
 
-# Dépendances Python
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+# Dépendances Python du scraper et de l'ETL
+RUN pip install --no-cache-dir requests beautifulsoup4 elasticsearch==8.12.0
 
 # Code source (scraper + modules ETL)
 COPY --chown=airflow:root src/ /opt/airflow/src/
